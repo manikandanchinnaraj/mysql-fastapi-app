@@ -1,0 +1,47 @@
+services:
+
+  mysql-db:
+    image: mysql:latest
+    container_name: mysql-db
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 --password="test123" --silent']
+      interval: 3s
+      retries: 5
+      start_period: 30s
+    networks:
+      -  fastapi-app
+    ports:
+      - 3306:3306
+      - 33060:33060
+    volumes:
+      - type: volume
+        source: mysql-db-data
+        target: /var/lib/mysql
+    command: mysqld --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: test123
+      MYSQL_DATABASE: books
+#      MYSQL_USER: books-api-admin
+#      MYSQL_PASSWORD: test123
+
+    #https://www.baeldung.com/ops/docker-compose-expose-vs-ports
+
+  fastapi-app:
+    image: fast-api:v1
+    container_name: webapp
+    networks:
+      -  fastapi-app
+    ports:
+      - 8000:8000
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql-db
+
+volumes:
+  mysql-db-data:
+
+networks:
+  fastapi-app:
